@@ -77,6 +77,7 @@ where
     terrain_opaque_cache: RefCell<FxHashMap<(i32, i32, i32, bool), bool>>,
     /// Probes for off-chunk height/opaque checks.
     terrain_probes: RefCell<FxHashMap<(i32, i32), TerrainProbe<N>>>,
+    locate_only: bool,
 }
 
 /// An off-chunk height and opacity probe.
@@ -144,6 +145,10 @@ pub trait StructureGenerationContext {
     fn template_pools(&self) -> &FxHashMap<Identifier, TemplatePoolData>;
     /// Structure templates (piece definitions + sizes).
     fn templates(&self) -> &FxHashMap<Identifier, TemplateData>;
+    /// Whether only where a structure starts matters, not all of its pieces.
+    fn locate_only(&self) -> bool {
+        false
+    }
     /// Base height at a column.
     fn base_height(&mut self, x: i32, z: i32, ocean_floor: bool) -> i32;
     /// Full-column base height scan.
@@ -230,7 +235,16 @@ where
             terrain_height_cache: RefCell::default(),
             terrain_opaque_cache: RefCell::default(),
             terrain_probes: RefCell::default(),
+            locate_only: false,
         }
+    }
+
+    /// Jigsaw structures stop at their center piece: whether they generate is known by then, and
+    /// the rest of the assembly is most of the work.
+    #[must_use]
+    pub const fn with_locate_only(mut self) -> Self {
+        self.locate_only = true;
+        self
     }
 
     /// `getBaseHeight(WORLD_SURFACE_WG)` — aquifer-aware, scans from
@@ -323,6 +337,10 @@ where
 }
 
 impl<N: DimensionNoises> StructureGenerationContext for GenerationContext<'_, '_, N> {
+    fn locate_only(&self) -> bool {
+        self.locate_only
+    }
+
     fn seed(&self) -> i64 {
         self.seed
     }

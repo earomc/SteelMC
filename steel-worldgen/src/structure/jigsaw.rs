@@ -985,7 +985,12 @@ impl Structure for JigsawStructure {
             return None;
         }
 
-        let assembly = {
+        let assembly = if ctx.locate_only() {
+            AssemblyResult {
+                biome_check_pos: started.biome_check_pos,
+                pieces: started.pieces,
+            }
+        } else {
             let mut get_height = |x: i32, z: i32| ctx.terrain_surface_height(x, z, false);
             finish_assembly(
                 started,
